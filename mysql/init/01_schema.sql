@@ -16,6 +16,9 @@ create table albums
         unique (jamendo_album_id)
 );
 
+create fulltext index ft_album_name
+    on albums (album_name);
+
 create table artists
 (
     artist_id         bigint auto_increment comment '아티스트 고유 식별자'
@@ -26,11 +29,11 @@ create table artists
     created_at        datetime   default CURRENT_TIMESTAMP not null comment '생성 시점',
     modified_at       datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '수정 시점',
     jamendo_artist_id bigint                               null comment 'Jamendo 아티스트 고유 식별자',
-    profile_image     varchar(255)                         null,
-    country           varchar(255)                         null,
+    profile_image     varchar(2048)                        null comment '아티스트 프로필 이미지',
+    country           varchar(100)                         null comment '활동 국가',
     artist_type       varchar(20)                          null comment '아티스트 유형',
     debut_date        date                                 null comment '데뷔일',
-    bio               varchar(255)                         null,
+    bio               varchar(500)                         null comment '소개글',
     constraint uk_songs_jamendo_artist_id
         unique (jamendo_artist_id)
 );
@@ -55,22 +58,16 @@ create index idx_artist_albums_album_id
 create index idx_artist_albums_artist_id
     on artist_albums (artist_id);
 
+create fulltext index ft_artist_name
+    on artists (artist_name);
+
 create table genres
 (
     genre_id   bigint auto_increment comment '장르 고유 식별자'
         primary key,
-    genre_name varchar(255) not null,
+    genre_name varchar(20) not null comment '장르 이름',
     constraint uk_genres_genre_name
         unique (genre_name)
-);
-
-create table search_histories
-(
-    history_id  bigint auto_increment comment '검색어 고유 식별자'
-        primary key,
-    word        varchar(255) not null,
-    count       bigint       not null comment '검색 횟수',
-    search_date date         not null comment '검색 날짜'
 );
 
 create table songs
@@ -93,8 +90,9 @@ create table songs
     created_at        datetime   default CURRENT_TIMESTAMP not null comment '생성 시점',
     modified_at       datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '수정 시점',
     jamendo_song_id   bigint                               null comment 'Jamendo 음원 고유 식별자',
-    streaming_status  tinyint(1) default 0                 null comment '스트리밍 가능 여부, 0: 스트리밍 가능 / 1: 스트리밍 불가능',
-    play_count        bigint     default 0                 not null,
+    play_count        bigint     default 0                 not null comment '재생 횟수',
+    streaming_status  tinyint(1) default 0                 null comment '스트리밍 가능 여부, 0: 스트리밍 불가능 / 1: 스트리밍 가능',
+    release_date      date                                 not null comment '발매일',
     constraint uk_songs_audio
         unique (audio),
     constraint uk_songs_jamendo_song_id
@@ -143,15 +141,12 @@ create index idx_song_genre_genre_id
 create index idx_song_genre_song_id
     on song_genres (song_id);
 
-create index idx_songs_album_id
-    on songs (album_id);
-
-create table streaming_jobs
+create table song_progressing_status
 (
-    streaming_job_id bigint auto_increment comment '음원 변환 작업 상태 고유 식별자'
+    song_progressing_status_id bigint auto_increment
         primary key,
-    song_id          bigint      not null comment '음원 고유 식별자',
-    job_status       varchar(32) not null comment '음원 변환 작업 상태',
+    song_id                    bigint      not null comment '음원 고유 식별자',
+    progressing_status         varchar(32) not null,
     constraint uk_streaming_jobs_song_id
         unique (song_id),
     constraint fk_streaming_jobs_song_id
@@ -159,21 +154,27 @@ create table streaming_jobs
 );
 
 create index idx_streaming_jobs_song_id
-    on streaming_jobs (song_id);
+    on song_progressing_status (song_id);
+
+create fulltext index ft_song_name
+    on songs (name);
+
+create index idx_songs_album_id
+    on songs (album_id);
 
 create table users
 (
     user_id        bigint auto_increment comment '유저 식별자'
         primary key,
-    name           varchar(255)                          not null,
-    nickname       varchar(255)                          not null,
+    name           varchar(50)                           not null comment '유저 이름',
+    nickname       varchar(10)                           not null comment '회원 닉네임',
     email          varchar(255)                          not null comment '회원 이메일',
     password       varchar(255)                          not null comment '회원 비밀번호(BCrypt 인코딩)',
     role           varchar(10) default 'USER'            not null comment '회원 권한',
     is_deleted     tinyint(1)  default 0                 not null comment '회원 삭제 여부, 0: 삭제 안됨 / 1: 삭제',
     created_at     datetime    default CURRENT_TIMESTAMP not null comment '생성 시점',
     modified_at    datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '수정 시점',
-    token_version  bigint                                not null,
+    token_version  bigint      default 0                 not null comment '토큰 버전',
     email_verified tinyint(1)  default 0                 not null comment '이메일 인증 여부',
     constraint uk_users_email
         unique (email),
