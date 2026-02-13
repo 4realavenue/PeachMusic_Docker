@@ -49,7 +49,7 @@ services:
     networks: [peachnet]
 
   api:
-    image: 4realavenue/peachmusic-api:v3
+    image: 4realavenue/peachmusic-api:v4
     container_name: peachmusic_api
     env_file: .env
     ports:
@@ -65,7 +65,7 @@ services:
     networks: [peachnet]
 
   worker:
-    image: 4realavenue/peachmusic-worker:v2
+    image: 4realavenue/peachmusic-worker:v3
     container_name: peachmusic_worker
     env_file: .env
     ports:
